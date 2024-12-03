@@ -187,9 +187,15 @@ def check_collision(bullets, player_pos):
             return True
     return False
 
+# ゲームの状態をリセット
+def reset_game():
+    global player1_health, player2_health
+    player1_health = 100
+    player2_health = 100
+
 # リザルト画面
 def show_result(winner):
-    global player1_wins, player2_wins
+    global player1_wins, player2_wins, player1_score, player2_score
     font = pygame.font.Font(None, 72)
     result_text = font.render(f"Winner: {winner}", True, (255, 255, 255))
     restart_text = font.render("Press R to Restart or Q to Quit", True, (255, 255, 255))
@@ -197,37 +203,35 @@ def show_result(winner):
     screen.fill((0, 0, 0))
     screen.blit(result_text, (screen_width // 2 - result_text.get_width() // 2, screen_height // 2 - 50))
     screen.blit(restart_text, (screen_width // 2 - restart_text.get_width() // 2, screen_height // 2 + 50))
-
+    
     if winner == "Player 1":
         player1_wins += 1
-    elif winner == "Player 2":
+        update_score(player1_id, player1_score, player1_wins)
+    else:
         player2_wins += 1
+        update_score(player2_id, player2_score, player2_wins)
 
     pygame.display.flip()
 
-    waiting_for_restart = True
-    while waiting_for_restart:
+    # 結果画面に遷移
+    waiting_for_input = True
+    while waiting_for_input:
         for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-                quit()
-
             if event.type == KEYDOWN:
                 if event.key == K_r:
-                    # リスタート処理
-                    global player1_health, player2_health, player1_score, player2_score
-                    player1_health = 100
-                    player2_health = 100
-                    player1_score = 0
-                    player2_score = 0
-                    player1_pos = [100, screen_height // 2]
-                    player2_pos = [screen_width - 150, screen_height // 2]
-                    game_loop()  # ゲームループを再開始
-
+                    # ゲームの状態をリセットしてループを再開
+                    reset_game()
+                    game_loop()
+                    waiting_for_input = False  # 結果画面から抜ける
                 if event.key == K_q:
                     pygame.quit()
                     quit()
 
+        pygame.display.flip()
+        pygame.time.Clock().tick(30)
+
+
+    
 # ゲームループ
 def game_loop():
     global player1_health, player2_health, player1_score, player2_score, player1_wins, player2_wins
@@ -315,7 +319,7 @@ def game_loop():
         pygame.display.flip()
         pygame.time.Clock().tick(60)
 
-# ゲームの開始
+# ゲーム開始
 wait_for_input()
 start_game()
 game_loop()
