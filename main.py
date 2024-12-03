@@ -25,7 +25,10 @@ def save_player_info(player_name):
 def update_score(player_id, score, wins):
     conn = connect_db()
     cursor = conn.cursor()
+    
+    # 正しいSQL文
     cursor.execute("UPDATE players SET score = %s, wins = %s WHERE player_id = %s", (score, wins, player_id))
+    
     conn.commit()
     cursor.close()
     conn.close()
@@ -196,6 +199,13 @@ def reset_game():
 # リザルト画面
 def show_result(winner):
     global player1_wins, player2_wins, player1_score, player2_score
+
+    # 勝者IDを決定
+    winner_id = player1_id if winner == "Player 1" else player2_id
+    
+    # 試合結果を保存
+    save_match_result(player1_id, player2_id, winner_id, player1_score, player2_score)
+
     font = pygame.font.Font(None, 72)
     result_text = font.render(f"Winner: {winner}", True, (255, 255, 255))
     restart_text = font.render("Press R to Restart or Q to Quit", True, (255, 255, 255))
@@ -224,14 +234,35 @@ def show_result(winner):
                     game_loop()
                     waiting_for_input = False  # 結果画面から抜ける
                 if event.key == K_q:
+                    # Qが押された場合、total_winsを更新
+                    update_total_wins(player1_id)  # Player 1のtotal_winsを更新
+                    update_total_wins(player2_id)  # Player 2のtotal_winsを更新
                     pygame.quit()
                     quit()
 
         pygame.display.flip()
         pygame.time.Clock().tick(30)
 
-
+# total_winsをリザルト画面で更新する
+def update_total_wins(player_id):
+    conn = connect_db()
+    cursor = conn.cursor()
     
+    # 現在のtotal_winsを取得
+    cursor.execute("SELECT total_wins, wins FROM players WHERE player_id = %s", (player_id,))
+    current_total_wins, current_wins = cursor.fetchone()
+    
+    # 新しいtotal_winsの計算
+    new_total_wins = current_total_wins + current_wins
+    
+    # total_winsの更新
+    cursor.execute("UPDATE players SET total_wins = %s WHERE player_id = %s", (new_total_wins, player_id))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 # ゲームループ
 def game_loop():
     global player1_health, player2_health, player1_score, player2_score, player1_wins, player2_wins
