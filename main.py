@@ -93,10 +93,59 @@ def draw_input_boxes():
     screen.blit(txt_surface1, (input_box1.x + 5, input_box1.y + 5))
     screen.blit(txt_surface2, (input_box2.x + 5, input_box2.y + 5))
 
-# ゲーム開始前の入力待機画面
+# 合計勝利数のランキング（ベスト5）を取得
+def get_player_ranking():
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, SUM(total_wins) AS total_wins_sum FROM players GROUP BY name ORDER BY total_wins_sum DESC LIMIT 5")  # TOP 5を取得
+    ranking = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return ranking
+
+# ランキングを表示
+def show_ranking():
+    ranking = get_player_ranking()
+    font = pygame.font.Font(None, 48)
+
+    screen.fill((0, 0, 0))
+    
+    # ランキングタイトル
+    title = font.render("Top 5 Player Ranking", True, (255, 255, 255))
+    screen.blit(title, (screen_width // 2 - title.get_width() // 2, screen_height // 4 - 50))
+    ranking_text = font.render("Press Enter to Start", True, (255, 255, 255))
+    screen.blit(ranking_text, (screen_width // 2 - ranking_text.get_width() // 2, screen_height // 2 + 50))
+
+    # ランキングリストの表示
+    y_offset = screen_height // 4
+    for i, (name, total_wins) in enumerate(ranking):
+        rank_text = font.render(f"{i+1}. {name} - Wins: {total_wins}", True, (255, 255, 255))
+        screen.blit(rank_text, (screen_width // 2 - rank_text.get_width() // 2, y_offset))
+        y_offset += 50  # 次の順位の位置をずらす
+
+    pygame.display.flip()
+    
+    # エンターキーが押されるまで待機
+    waiting_for_enter = True
+    while waiting_for_enter:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                quit()
+
+            if event.type == KEYDOWN:
+                if event.key == K_RETURN:  # エンターキーが押されたら
+                    waiting_for_enter = False  # 名前入力画面に移行
+
+        pygame.time.Clock().tick(30)
+
+# ゲーム開始前の画面
 def wait_for_input():
     global active1, active2, text1, text2, player1_name, player2_name
     waiting_for_input = True
+
+    # ランキングを表示
+    show_ranking()
 
     while waiting_for_input:
         for event in pygame.event.get():
@@ -142,12 +191,12 @@ def wait_for_input():
 
         screen.fill((0, 0, 0))
         draw_input_boxes()
-        
+
         # 名前が入力されたら画面に表示する
         font2 = pygame.font.Font(None, 48)
         text_player1 = font2.render(f"Player 1: {player1_name}" if player1_name else "Enter Player 1 Name", True, (255, 255, 255))
         text_player2 = font2.render(f"Player 2: {player2_name}" if player2_name else "Enter Player 2 Name", True, (255, 255, 255))
-        
+
         screen.blit(text_player1, (screen_width // 4 - 150, screen_height // 2 + 10))
         screen.blit(text_player2, (3 * screen_width // 4 - 150, screen_height // 2 + 10))
 
